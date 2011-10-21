@@ -176,7 +176,8 @@ class FacebookPlugin extends Gdn_Plugin {
             throw new Gdn_UserException('Facebook returned the following error: '.GetValueR('error.message', $Tokens, 'Unknown error.'), 400);
          }
 
-         $AccessToken = GetValue('access_token', $Tokens);         
+         $AccessToken = GetValue('access_token', $Tokens); 
+         logger($AccessToken);        
          $Expires = GetValue('expires', $Tokens, NULL);
 
          setcookie('fb_access_token', $AccessToken, time() + $Expires, C('Garden.Cookie.Path', '/'), C('Garden.Cookie.Domain', ''));
