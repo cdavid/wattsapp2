@@ -98,15 +98,30 @@ class WattsAppController extends Gdn_Controller {
     $this->Render();
   }
 
-  public function MoteList ($ClientID, $Token, $CollectorID) {
+  public function MoteList ($ClientID, $Token, $CollectorID) {    
     if ($ClientID && is_numeric($ClientID)) {
-
-      $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);
+      $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);      
       if ($this->OkToRender) {
-        //FETCH THE DATA from the collector
-        //$this->UserModel->GetByEmail($this->OkToRender)->UserID
+        $UserID = $this->UserModel->GetByEmail($this->OkToRender)->UserID;
+        $CollectorPermission = $this->UserServerModel->GetPermission($UserID, $CollectorID); 
+        if ($CollectorPermission){
+          //if the user has permission to see this collector
+          //FETCH THE DATA from the collector
+          $CollectorData = $this->ServerModel->GetID($CollectorPermission->ServerID);
+          $CollectorAddress = $CollectorData->Address;
+          $CollectorPort = $CollectorData->Port;
+          logger("asd");
+          logger($CollectorAddress);
+          logger($CollectorPort);
+          logger("asd");
+          $ch = curl_init();
+          curl_setopt($ch, CURLOPT_URL, "$CollectorAddress:$CollectorPort");
+          curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+          $output = curl_exec($ch);
+          curl_close($ch);
+          logger($output);
+        }        
       }
-
     }
 
     $this->DeliveryType(DELIVERY_TYPE_VIEW);

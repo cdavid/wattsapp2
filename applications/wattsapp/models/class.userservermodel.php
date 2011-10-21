@@ -38,4 +38,12 @@ class UserServerModel extends Gdn_Model {
     $this->UserServerQuery();
     return $this->SQL->Where('a.ServerID', $ServerID)->Get();
   }
+  
+  public function GetPermission ($UserID, $ServerID) {
+    $this->UserServerQuery();
+    return $this->SQL
+      ->Where('a.ServerID', $ServerID)
+      ->Where('a.UserID', $UserID)
+      ->Get()->FirstRow();    
+  }
 }
