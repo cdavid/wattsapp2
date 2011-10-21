@@ -1,7 +1,7 @@
 <?php if (!defined('APPLICATION')) exit();
 //ServerID Name PermissionType 
 echo '[';
-if ($this->res->NumRows() > 0) {
+if ($this->res && $this->res->NumRows() > 0) {
   $re = $this->res->Result();
   for ($i = 0; $i < $this->res->NumRows(); $i++) {
     $r = $re[$i];

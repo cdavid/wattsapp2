@@ -69,7 +69,13 @@ class WattsAppController extends Gdn_Controller {
   }
 
   static public function verifyFacebookLogin($ClientID, $Token) {
-    $output = file_get_contents("https://graph.facebook.com/me?access_token=".$Token);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://graph.facebook.com/me?access_token=".$Token);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    $output = curl_exec($ch);
+    curl_close($ch);
+
+//    $output = file_get_contents("https://graph.facebook.com/me?access_token=".$Token);
     //Now parse the $output and get the id from the
     $d = json_decode($output);
     if ($d->id == $ClientID) {
@@ -78,14 +84,13 @@ class WattsAppController extends Gdn_Controller {
     return false;
   }
 
-
-
   public function CollectorList ($ClientID, $Token) {
     if ($ClientID && is_numeric($ClientID)) {
       $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
-        //FETCH the data from the database        
+        //FETCH the data from the database
         $this->res = $this->ServerModel->ServerQueryUserID($this->UserModel->GetByEmail($this->OkToRender)->UserID);
+
       }
     }
     $this->DeliveryType(DELIVERY_TYPE_VIEW);
@@ -99,7 +104,7 @@ class WattsAppController extends Gdn_Controller {
       $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
         //FETCH THE DATA from the collector
-        
+        //$this->UserModel->GetByEmail($this->OkToRender)->UserID
       }
 
     }
@@ -110,9 +115,13 @@ class WattsAppController extends Gdn_Controller {
 
     $this->Render();
   }
-  
+
   public function mList ($ClientID, $Token) {
     //TODO: this should query all collectors for their motes and return the result
+    $this->DeliveryType(DELIVERY_TYPE_VIEW);
+    $this->DeliveryMethod(DELIVERY_METHOD_JSON);
+
+    $this->Render();
   }
 
   public function Details ($ClientID, $Token, $SensorList = '', $Times = '') {
