@@ -115,11 +115,16 @@ class WattsAppController extends Gdn_Controller {
           logger($CollectorPort);
           logger("asd");
           $ch = curl_init();
-          curl_setopt($ch, CURLOPT_URL, "$CollectorAddress:$CollectorPort");
+          curl_setopt($ch, CURLOPT_URL, "$CollectorAddress:$CollectorPort/list");
+          curl_setopt($ch, CURLOPT_CAINFO, "/home/cdavid/lisa.pem");
+          curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, '1');
+          curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, '1');
+          curl_setopt($ch, CURLOPT_SSLCERT, "/home/cdavid/certificate.pem");
+          curl_setopt($ch, CURLOPT_SSLKEY, "/home/cdavid/privatekey");          
           curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-          $output = curl_exec($ch);
+          $this->res = curl_exec($ch);
           curl_close($ch);
-          logger($output);
+          
         }        
       }
     }
