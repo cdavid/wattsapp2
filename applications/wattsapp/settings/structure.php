@@ -2,10 +2,10 @@
 // Use this file to do any database changes for your application.
 
 if (!isset($Drop))
-   $Drop = FALSE; // Safe default - Set to TRUE to drop the table if it already exists.
+   $Drop = TRUE; // Safe default - Set to TRUE to drop the table if it already exists.
    
 if (!isset($Explicit))
-   $Explicit = FALSE; // Safe default - Set to TRUE to remove all other columns from table.
+   $Explicit = TRUE; // Safe default - Set to TRUE to remove all other columns from table.
 
 $Database = Gdn::Database();
 $SQL = $Database->SQL(); // To run queries.
@@ -29,39 +29,40 @@ $Construct->Table('Server')
    ->PrimaryKey('ServerID')
    ->Column("Name", 'varchar(50)')
    ->Column("Address", 'varchar(50)')
-   ->Column('Visible', 'tinyint(1)', '1')   
+   ->Column('Visible', 'tinyint(1)', '1') 
+   ->Column('Port', 'int')  
    ->Set($Explicit,$Drop);
    
-$Construct->Table('Mote')
-   ->PrimaryKey('MoteID')
-   ->Column('ServerID', 'int')
-   ->Column('Name', 'varchar(50)')
-   ->Column('Status', 'varchar(50)')
-   ->Column('Type', 'varchar(50)')
-   ->Column('Location', 'varchar(255)')
-   ->Set($Explicit,$Drop);
-   
-$Construct->Table('eLog')
-   ->PrimaryKey('eLogID')
-   ->Column('MoteID', 'int')
-   ->Column('BeginT', 'varchar(50)')
-   ->Column('EndT', 'varchar(50)')
-   ->Column('Value', 'varchar(50)')
-   ->Set($Explicit,$Drop);
+//$Construct->Table('Mote')
+//   ->PrimaryKey('MoteID')
+//   ->Column('ServerID', 'int')
+//   ->Column('Name', 'varchar(50)')
+//   ->Column('Status', 'varchar(50)')
+//   ->Column('Type', 'varchar(50)')
+//   ->Column('Location', 'varchar(255)')
+//   ->Set($Explicit,$Drop);
+//   
+//$Construct->Table('eLog')
+//   ->PrimaryKey('eLogID')
+//   ->Column('MoteID', 'int')
+//   ->Column('BeginT', 'varchar(50)')
+//   ->Column('EndT', 'varchar(50)')
+//   ->Column('Value', 'varchar(50)')
+//   ->Set($Explicit,$Drop);
    
 $Construct->Table('UserServer')
    ->PrimaryKey('UserServerID')
-   ->Column('UserID')
-   ->Column('ServerID')
-   ->Column('PermissionType') //should be view / admin
+   ->Column('UserID', 'int')
+   ->Column('ServerID', 'int')
+   ->Column('PermissionType', 'varchar(50)') //should be view / admin
    ->Set($Explicit,$Drop);
    
-$Construct->Table('UserMote')
-   ->PrimaryKey('UserMoteID')
-   ->Column('UserID')
-   ->Column('MoteID')
-   ->Column('PermissionType') //should be view / admin
-   ->Set($Explicit,$Drop);
+//$Construct->Table('UserMote')
+//   ->PrimaryKey('UserMoteID')
+//   ->Column('UserID')
+//   ->Column('MoteID')
+//   ->Column('PermissionType') //should be view / admin
+//   ->Set($Explicit,$Drop);
 
 // Example: Add column to existing table.
 /* 

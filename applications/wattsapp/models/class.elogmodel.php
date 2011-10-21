@@ -46,6 +46,21 @@ class eLogModel extends Gdn_Model {
     }
     return $this->SQL->Where('a.MoteID', $MoteID)->Get();
   }
+  
+  public function GetByMotesTimes ($MoteList, $BeginT = '0', $EndT = '', $Wheres = '') {
+    if (!$EndT) {
+      $EndT = time();
+    } 
+    $this->eLogQuery();
+    if (is_array($Wheres)) {
+      $this->SQL->Where($Wheres);
+    }
+    if (is_array($MoteList)) {
+      $this->SQL->WhereIn('a.MoteID', $MoteList);
+    }//TODO: handle else case
+    $this->SQL->Where('BeginT >', $BeginT)->Where('EndT <',$EndT)->Get();
+    return $this->SQL->Get();
+  }
 
   public function GetByTime ($BeginT, $EndT, $Wheres = '') {
     $this->eLogQuery();

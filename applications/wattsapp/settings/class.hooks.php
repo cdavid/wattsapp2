@@ -4,7 +4,7 @@
  *
  * Remember to rename this to FooHooks, where 'Foo' is you app's short name.
  */
-class SkeletonHooks implements Gdn_IPlugin {
+class WattsAppHooks implements Gdn_IPlugin {
    /**
     * Example hook. You should delete this.
     *
@@ -19,7 +19,7 @@ class SkeletonHooks implements Gdn_IPlugin {
     * Special function automatically run upon clicking 'Enable' on your application.
     * Change the word 'skeleton' anywhere you see it.
     */
-   public function Setup() {
+   public function Setup() {     
       // You need to manually include structure.php here for it to get run at install.
       include(PATH_APPLICATIONS . DS . 'wattsapp' . DS . 'settings' . DS . 'structure.php');
 

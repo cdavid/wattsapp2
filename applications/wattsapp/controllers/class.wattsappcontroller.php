@@ -18,7 +18,7 @@
  */
 class WattsAppController extends Gdn_Controller {
   /** @var array List of objects to prep. They will be available as $this->$Name. */
-  public $Uses = array('Form', 'ServerModel', 'MoteModel', 'eLogModel', 'UserServerModel', 'UserMoteModel');
+  public $Uses = array('Form', 'ServerModel', 'UserServerModel', 'UserModel');
    
   /**
    * If you use a constructor, always call parent.
@@ -68,23 +68,40 @@ class WattsAppController extends Gdn_Controller {
     $this->Render();
   }
 
-  public function mList($ClientID, $Token) {
-    if (!$ClientID || !is_numeric($ClientID)) {
-      //SOMETHING IS WRONG!!!
-      //TODO: Panic
-    } else {
-      $ch = curl_init();
-      curl_setopt($ch, CURLOPT_URL, "https://graph.facebook.com/me?access_token=".$Token);
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-      $output = curl_exec($ch);
-      curl_close($ch);
-      //Now parse the $output and get the id from the
-      $d = json_decode($output);
-      if ($d->id == $ClientID) {
-        $this->OkToRender = 1;
-      } else { 
-        $this->OkToRender = 0;
+  static public function verifyFacebookLogin($ClientID, $Token) {
+    $output = file_get_contents("https://graph.facebook.com/me?access_token=".$Token);
+    //Now parse the $output and get the id from the
+    $d = json_decode($output);
+    if ($d->id == $ClientID) {
+      return $d->email;
+    }
+    return false;
+  }
+
+
+
+  public function CollectorList ($ClientID, $Token) {
+    if ($ClientID && is_numeric($ClientID)) {
+      $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);
+      if ($this->OkToRender) {
+        //FETCH the data from the database        
+        $this->res = $this->ServerModel->ServerQueryUserID($this->UserModel->GetByEmail($this->OkToRender)->UserID);
       }
+    }
+    $this->DeliveryType(DELIVERY_TYPE_VIEW);
+    $this->DeliveryMethod(DELIVERY_METHOD_JSON);
+    $this->Render();
+  }
+
+  public function MoteList ($ClientID, $Token, $CollectorID) {
+    if ($ClientID && is_numeric($ClientID)) {
+
+      $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);
+      if ($this->OkToRender) {
+        //FETCH THE DATA from the collector
+        
+      }
+
     }
 
     $this->DeliveryType(DELIVERY_TYPE_VIEW);
@@ -92,5 +109,33 @@ class WattsAppController extends Gdn_Controller {
 
 
     $this->Render();
+  }
+  
+  public function mList ($ClientID, $Token) {
+    //TODO: this should query all collectors for their motes and return the result
+  }
+
+  public function Details ($ClientID, $Token, $SensorList = '', $Times = '') {
+    if ($ClientID && is_numeric($ClientID)) {
+      $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);
+      if ($this->OkToRender) {
+        if ($SensorList && $Times) {
+
+          //validate the times
+          $t = array_slice(explode(':', $Times), 0, 2, true);
+          if (!$t[0]) $t[0] = 0;
+          if (!$t[1]) $t[1] = time();
+
+          $ids = $SensorList == 'all' ? 'all' : explode(',', $SensorList);
+
+          //fetch the data from the server
+
+          $this->LogData = $this->eLogModel->GetByMotesTimes($ids, $t[0], $t[1]);
+          $this->OkToRender = 1;
+        } else {
+          //TODO: GET ALL DATA???
+        }
+      }
+    }
   }
 }

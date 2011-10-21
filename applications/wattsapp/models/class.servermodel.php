@@ -9,9 +9,23 @@ class ServerModel extends Gdn_Model {
     $this->SQL
       ->Select('a.ServerID')
       ->Select('a.Name')
-      ->Select('a.Address')
-      ->From('Server a')
+      ->Select('a.Address')      
+      ->SelecT('a.Port')
+      ->From('Server a')      
       ->Where('a.Visible', '1');
+  }
+  
+  public function ServerQueryUserID ($UserID) {
+    return $this->SQL
+      ->Select('a.ServerID')
+      ->Select('a.Name')
+      ->Select('s.PermissionType')
+      ->From('Server a')
+      ->Join('UserServer s', 's.ServerID = a.ServerID')
+      ->Join('User u', 's.UserID = u.UserID')
+      ->Where('a.Visible', '1')
+      ->Where('u.UserID', $UserID)
+      ->Get();      
   }
   
   public function GetID ($ServerID) {
