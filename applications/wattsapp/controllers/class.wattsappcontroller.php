@@ -68,14 +68,14 @@ class WattsAppController extends Gdn_Controller {
     $this->Render();
   }
 
-  static public function verifyFacebookLogin($ClientID, $Token) {
+  static private function _verifyFacebookLogin($ClientID, $Token) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "https://graph.facebook.com/me?access_token=".$Token);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     $output = curl_exec($ch);
     curl_close($ch);
 
-//    $output = file_get_contents("https://graph.facebook.com/me?access_token=".$Token);
+    //    $output = file_get_contents("https://graph.facebook.com/me?access_token=".$Token);
     //Now parse the $output and get the id from the
     $d = json_decode($output);
     if ($d->id == $ClientID) {
@@ -84,9 +84,25 @@ class WattsAppController extends Gdn_Controller {
     return false;
   }
 
+  static public function _CollectorGet ($CollectorAddress, $CollectorPort, $CollectorMethod, $Args) {
+    //TODO:improve code quality
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "$CollectorAddress:$CollectorPort/$CollectorMethod?$Args");
+    curl_setopt($ch, CURLOPT_CAINFO, "/home/cdavid/lisa.pem"); // C('WattsApp.CAINFO');
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, '1');
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, '1');
+    curl_setopt($ch, CURLOPT_SSLCERT, "/home/cdavid/certificate.pem"); // C('WattsApp.SSLCERT');
+    curl_setopt($ch, CURLOPT_SSLKEY, "/home/cdavid/privatekey");       // C('WattsApp.SSLKEY');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    return $res;
+  }
+
   public function CollectorList ($ClientID, $Token) {
     if ($ClientID && is_numeric($ClientID)) {
-      $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);
+      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
         //FETCH the data from the database
         $this->res = $this->ServerModel->ServerQueryUserID($this->UserModel->GetByEmail($this->OkToRender)->UserID);
@@ -98,46 +114,61 @@ class WattsAppController extends Gdn_Controller {
     $this->Render();
   }
 
-  public function MoteList ($ClientID, $Token, $CollectorID) {    
+  public function MoteList ($ClientID, $Token, $CollectorID) {
     if ($ClientID && is_numeric($ClientID)) {
-      $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);      
+      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);      
       if ($this->OkToRender) {
         $UserID = $this->UserModel->GetByEmail($this->OkToRender)->UserID;
-        $CollectorPermission = $this->UserServerModel->GetPermission($UserID, $CollectorID); 
+        $CollectorPermission = $this->UserServerModel->GetPermission($UserID, $CollectorID);
+        
         if ($CollectorPermission){
           //if the user has permission to see this collector
           //FETCH THE DATA from the collector
           $CollectorData = $this->ServerModel->GetID($CollectorPermission->ServerID);
           $CollectorAddress = $CollectorData->Address;
           $CollectorPort = $CollectorData->Port;
-          logger("asd");
-          logger($CollectorAddress);
-          logger($CollectorPort);
-          logger("asd");
-          $ch = curl_init();
-          curl_setopt($ch, CURLOPT_URL, "$CollectorAddress:$CollectorPort/list");
-          curl_setopt($ch, CURLOPT_CAINFO, "/home/cdavid/lisa.pem");
-          curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, '1');
-          curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, '1');
-          curl_setopt($ch, CURLOPT_SSLCERT, "/home/cdavid/certificate.pem");
-          curl_setopt($ch, CURLOPT_SSLKEY, "/home/cdavid/privatekey");          
-          curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-          $this->res = curl_exec($ch);
-          curl_close($ch);
-          
-        }        
+
+          $res_json = self::_CollectorGet($CollectorAddress, $CollectorPort, 'list', '');
+          $res_no = json_decode($res_json);          
+          foreach ($res_no as $r) {
+            $r->access = $CollectorPermission->PermissionType == "view" ? "1" : 
+                         $CollectorPermission->PermissionType == "admin" ? "2" : "";
+          }
+          $this->res = json_encode($res_no);          
+        }
       }
     }
-
     $this->DeliveryType(DELIVERY_TYPE_VIEW);
     $this->DeliveryMethod(DELIVERY_METHOD_JSON);
-
-
     $this->Render();
   }
 
   public function mList ($ClientID, $Token) {
     //TODO: this should query all collectors for their motes and return the result
+    if ($ClientID && is_numeric($ClientID)) {
+      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
+      if ($this->OkToRender) {
+        //get all collectors the user has access to
+        $Collectors = $this->ServerModel->ServerQueryUserID($this->UserModel->GetByEmail($this->OkToRender)->UserID);
+        if ($Collectors && $Collectors->NumRows() > 0) {
+          //for all collectors
+          $res = array();
+          foreach ($Collectors->Result() as $Collector) {
+            $CollectorID = $Collector->ServerID;
+            $CollectorAddress = $Collector->Address;
+            $CollectorPort = $Collector->Port;
+            $res_nojson = json_decode(self::_CollectorGet($CollectorAddress, $CollectorPort, 'list', ''));
+            logger(var_export(self::_CollectorGet($CollectorAddress, $CollectorPort, 'list', ''), true));
+            $obj->collectorid = $CollectorID;
+            $obj->motelist = $res_nojson;             
+            $res[] = $obj;                        
+          }
+          $this->res = json_encode($res);
+        }
+      }
+    }
+
+
     $this->DeliveryType(DELIVERY_TYPE_VIEW);
     $this->DeliveryMethod(DELIVERY_METHOD_JSON);
 
@@ -146,7 +177,7 @@ class WattsAppController extends Gdn_Controller {
 
   public function Details ($ClientID, $Token, $SensorList = '', $Times = '') {
     if ($ClientID && is_numeric($ClientID)) {
-      $this->OkToRender = self::verifyFacebookLogin($ClientID, $Token);
+      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
         if ($SensorList && $Times) {
 

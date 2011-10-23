@@ -19,6 +19,8 @@ class ServerModel extends Gdn_Model {
     return $this->SQL
       ->Select('a.ServerID')
       ->Select('a.Name')
+      ->Select('a.Address')
+      ->Select('a.Port')
       ->Select('s.PermissionType')
       ->From('Server a')
       ->Join('UserServer s', 's.ServerID = a.ServerID')
