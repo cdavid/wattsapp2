@@ -68,7 +68,7 @@ class WattsAppController extends Gdn_Controller {
     $this->Render();
   }
 
-  static private function _verifyFacebookLogin($ClientID, $Token) {
+  static public function _verifyFacebookLogin($ClientID, $Token) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "https://graph.facebook.com/me?access_token=".$Token);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -84,7 +84,7 @@ class WattsAppController extends Gdn_Controller {
     return false;
   }
 
-  static public function _CollectorGet ($CollectorAddress, $CollectorPort, $CollectorMethod, $Args) {
+  static public function _getCollector ($CollectorAddress, $CollectorPort, $CollectorMethod, $Args) {
     //TODO:improve code quality
 
     $ch = curl_init();
@@ -97,6 +97,29 @@ class WattsAppController extends Gdn_Controller {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     $res = curl_exec($ch);
     curl_close($ch);
+    return $res;
+  }
+
+  static public function _getCollectors($Method, $OkToRender, $Args = '') {
+    $ServerModel = new ServerModel();
+    $UserModel = new UserModel();
+    $Collectors = $ServerModel->ServerQueryUserID($UserModel->GetByEmail($OkToRender)->UserID);
+    if ($Collectors && $Collectors->NumRows() > 0) {
+      //for all collectors
+      $res = array();
+      foreach ($Collectors->Result() as $Collector) {
+        $CollectorName = $Collector->Name;
+        $CollectorAddress = $Collector->Address;
+        $CollectorPort = $Collector->Port;
+        $res_nojson = json_decode(self::_getCollector($CollectorAddress, $CollectorPort, $Method, $Args));
+
+        $obj->collectorname = $CollectorName;
+        $obj->motelist = $res_nojson;
+        $obj->access = $CollectorPermission->PermissionType == "view" ? "1" :
+        $CollectorPermission->PermissionType == "admin" ? "2" : "0";
+        $res[] = $obj;
+      }
+    }
     return $res;
   }
 
@@ -115,12 +138,12 @@ class WattsAppController extends Gdn_Controller {
   }
 
   public function MoteList ($ClientID, $Token, $CollectorID) {
-    if ($ClientID && is_numeric($ClientID)) {
-      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);      
+    if ($ClientID && $Token && is_numeric($ClientID)) {
+      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
         $UserID = $this->UserModel->GetByEmail($this->OkToRender)->UserID;
         $CollectorPermission = $this->UserServerModel->GetPermission($UserID, $CollectorID);
-        
+
         if ($CollectorPermission){
           //if the user has permission to see this collector
           //FETCH THE DATA from the collector
@@ -128,13 +151,13 @@ class WattsAppController extends Gdn_Controller {
           $CollectorAddress = $CollectorData->Address;
           $CollectorPort = $CollectorData->Port;
 
-          $res_json = self::_CollectorGet($CollectorAddress, $CollectorPort, 'list', '');
-          $res_no = json_decode($res_json);          
+          $res_json = self::_getCollector($CollectorAddress, $CollectorPort, 'list', '');
+          $res_no = json_decode($res_json);
           foreach ($res_no as $r) {
-            $r->access = $CollectorPermission->PermissionType == "view" ? "1" : 
-                         $CollectorPermission->PermissionType == "admin" ? "2" : "";
+            $r->access = $CollectorPermission->PermissionType == "view" ? "1" :
+            $CollectorPermission->PermissionType == "admin" ? "2" : "0";
           }
-          $this->res = json_encode($res_no);          
+          $this->res = json_encode($res_no);
         }
       }
     }
@@ -143,59 +166,99 @@ class WattsAppController extends Gdn_Controller {
     $this->Render();
   }
 
+
+
   public function mList ($ClientID, $Token) {
-    //TODO: this should query all collectors for their motes and return the result
-    if ($ClientID && is_numeric($ClientID)) {
+    if ($ClientID && $Token && is_numeric($ClientID)) {
       $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
         //get all collectors the user has access to
-        $Collectors = $this->ServerModel->ServerQueryUserID($this->UserModel->GetByEmail($this->OkToRender)->UserID);
-        if ($Collectors && $Collectors->NumRows() > 0) {
-          //for all collectors
-          $res = array();
-          foreach ($Collectors->Result() as $Collector) {
-            $CollectorID = $Collector->ServerID;
-            $CollectorAddress = $Collector->Address;
-            $CollectorPort = $Collector->Port;
-            $res_nojson = json_decode(self::_CollectorGet($CollectorAddress, $CollectorPort, 'list', ''));
-            logger(var_export(self::_CollectorGet($CollectorAddress, $CollectorPort, 'list', ''), true));
-            $obj->collectorid = $CollectorID;
-            $obj->motelist = $res_nojson;             
-            $res[] = $obj;                        
-          }
-          $this->res = json_encode($res);
-        }
+        $this->res = json_encode(self::_getCollectors("list", $this->OkToRender));
       }
     }
-
-
     $this->DeliveryType(DELIVERY_TYPE_VIEW);
     $this->DeliveryMethod(DELIVERY_METHOD_JSON);
 
+    $this->Render();
+  }
+
+  public function _SumDetails ($Method, $ClientID, $Token, $SensorList, $Times) {
+    if ($ClientID && $Token && is_numeric($ClientID)) {
+      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
+      if ($this->OkToRender) {
+        //$SensorList might be:
+        // 1. * -- which means all collectors and all sensors the user has access to
+        // 2a. a list of (Collector,*) -- which means all motes for a certain collector
+        // 2b. a list of (Collector,MoteList) -- which means only these motes from this collector
+        // The separators are as following:
+        // -- between two (CollectorList,MoteList)  ;
+        // -- between two items in the MoteList  :
+        // -- between CollectorList and MoteList  ,
+
+        //$Times might be:
+        // 1. *
+        // 2. t1:
+        // 3. :t2
+        // 4. t1:t2
+        $res = array();
+        $UserID = $this->UserModel->GetByEmail($this->OkToRender)->UserID;
+
+        //TODO: check for well-formedness
+        //TODO: Optimize the CollectionPermission retrieval to be done just once, not for every collector
+        if ($SensorList == '*') {
+          $this->res = json_encode(self::_getCollectors($Method, $this->OkToRender, "time=" . $Times == '*' ? '' : $Times));
+        } else {
+          //case 2 from above
+          //separate by ;
+          $sList = explode(';',  $SensorList);
+          //now we have (Collector,MoteList)
+          foreach ($sList as $sItem) {
+            if (!$sItem || $sItem[0] != '(' || $sItem[strlen($sItem) - 1] != ')') continue;
+            $sItem = substr($sItem, 1, -1); // remove ()
+            $a = explode(',', $sItem);
+            $CollectorID = ''; if ($a[0]) $CollectorID = $a[0];
+            $MoteStr = ''; if ($a[1]) $MoteStr = $a[1];
+            if ($MoteStr == '*') {
+              $MoteList = "*";
+            } else {
+              $MoteList = explode(':', $MoteStr);
+            }
+            $pRes = "";
+
+            //if the user has permission for the collector
+            $CollectorPermission = $this->UserServerModel->GetPermission($UserID, $CollectorID);
+            if ($CollectorPermission){
+              $CollectorData = $this->ServerModel->GetID($CollectorPermission->ServerID);
+              $CollectorAddress = $CollectorData->Address;
+              $CollectorPort = $CollectorData->Port;
+              $args = $MoteList == "*" ? '' : 'sensors=' . implode(',', $MoteList);
+              $args = $args . "&time=" . $Times;
+              $pRes = self::_getCollector($CollectorAddress, $CollectorPort, $Method, $args);
+              $obj->collectorid = $CollectorData->ServerID;
+              $obj->collectorname = $CollectorData->Name;
+              $obj->data = json_decode($pRes);
+              $res[] = $obj;
+            }
+          }
+        }
+        $this->res = json_encode($res);
+      }
+    }
+  }
+
+  public function Sum ($ClientID, $Token, $SensorList = '', $Times = '') {
+    self::_SumDetails('sum', $ClientID, $Token, $SensorList, $Times);
+    $this->DeliveryType(DELIVERY_TYPE_VIEW);
+    $this->DeliveryMethod(DELIVERY_METHOD_JSON);
+    $this->View = 'sumdetail';
     $this->Render();
   }
 
   public function Details ($ClientID, $Token, $SensorList = '', $Times = '') {
-    if ($ClientID && is_numeric($ClientID)) {
-      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
-      if ($this->OkToRender) {
-        if ($SensorList && $Times) {
-
-          //validate the times
-          $t = array_slice(explode(':', $Times), 0, 2, true);
-          if (!$t[0]) $t[0] = 0;
-          if (!$t[1]) $t[1] = time();
-
-          $ids = $SensorList == 'all' ? 'all' : explode(',', $SensorList);
-
-          //fetch the data from the server
-
-          $this->LogData = $this->eLogModel->GetByMotesTimes($ids, $t[0], $t[1]);
-          $this->OkToRender = 1;
-        } else {
-          //TODO: GET ALL DATA???
-        }
-      }
-    }
+    self::_SumDetails('details', $ClientID, $Token, $SensorList, $Times);
+    $this->DeliveryType(DELIVERY_TYPE_VIEW);
+    $this->DeliveryMethod(DELIVERY_METHOD_JSON);
+    $this->View = 'sumdetail';
+    $this->Render();
   }
 }
