@@ -114,9 +114,10 @@ class WattsAppController extends Gdn_Controller {
         $res_nojson = json_decode(self::_getCollector($CollectorAddress, $CollectorPort, $Method, $Args));
 
         $obj->collectorname = $CollectorName;
+        $obj->access = $Collector->PermissionType == "view" ? "1" :
+                       $Collector->PermissionType == "admin" ? "2" : "0";
         $obj->motelist = $res_nojson;
-        $obj->access = $CollectorPermission->PermissionType == "view" ? "1" :
-        $CollectorPermission->PermissionType == "admin" ? "2" : "0";
+        
         $res[] = $obj;
       }
     }
