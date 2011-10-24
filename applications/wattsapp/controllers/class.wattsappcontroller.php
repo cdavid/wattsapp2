@@ -112,7 +112,8 @@ class WattsAppController extends Gdn_Controller {
         $CollectorAddress = $Collector->Address;
         $CollectorPort = $Collector->Port;
         $res_nojson = json_decode(self::_getCollector($CollectorAddress, $CollectorPort, $Method, $Args));
-
+        
+        $obj->collectorid = $Collector->ServerID;
         $obj->collectorname = $CollectorName;
         $obj->access = $Collector->PermissionType == "view" ? "1" :
                        $Collector->PermissionType == "admin" ? "2" : "0";
