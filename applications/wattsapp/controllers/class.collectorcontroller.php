@@ -1,7 +1,7 @@
 <?php if (!defined('APPLICATION')) exit();
 
-class ServerController extends Gdn_Controller {
-  public $Uses = array('Form', 'ServerModel');
+class CollectorController extends Gdn_Controller {
+  public $Uses = array('Form', 'CollectorModel');
 
   public function Initialize() {
     // There are 4 delivery types used by Render().

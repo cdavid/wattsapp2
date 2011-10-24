@@ -6,5 +6,5 @@ if ($this->DeliveryType() == DELIVERY_TYPE_ALL) {
     echo "asdafs";
   }
   echo "<div class='Legal'> Welcome to WattsApp!!! </div>";
-  echo "<div class='Legal'><a href='". Gdn_Url::WebRoot(true) ."/index.php?p=/wattsapp/server/'>Server List</div>";
+  echo "<div class='Legal'><a href='". Gdn_Url::WebRoot(true) ."/index.php?p=/wattsapp/collector/'>Collector List</div>";
 }

@@ -25,8 +25,8 @@ $Construct->Table('ExampleTable')
    ->Set($Explicit, $Drop); // If you omit $Explicit and $Drop they default to false.
 */ 
 
-$Construct->Table('Server')
-   ->PrimaryKey('ServerID')
+$Construct->Table('Collector')
+   ->PrimaryKey('CollectorID')
    ->Column("Name", 'varchar(50)')
    ->Column("Address", 'varchar(50)')
    ->Column('Visible', 'tinyint(1)', '1') 
@@ -35,7 +35,7 @@ $Construct->Table('Server')
    
 //$Construct->Table('Mote')
 //   ->PrimaryKey('MoteID')
-//   ->Column('ServerID', 'int')
+//   ->Column('CollectorID', 'int')
 //   ->Column('Name', 'varchar(50)')
 //   ->Column('Status', 'varchar(50)')
 //   ->Column('Type', 'varchar(50)')
@@ -50,10 +50,10 @@ $Construct->Table('Server')
 //   ->Column('Value', 'varchar(50)')
 //   ->Set($Explicit,$Drop);
    
-$Construct->Table('UserServer')
-   ->PrimaryKey('UserServerID')
+$Construct->Table('UserCollector')
+   ->PrimaryKey('UserCollectorID')
    ->Column('UserID', 'int')
-   ->Column('ServerID', 'int')
+   ->Column('CollectorID', 'int')
    ->Column('PermissionType', 'varchar(50)') //should be view / admin
    ->Set($Explicit,$Drop);
    

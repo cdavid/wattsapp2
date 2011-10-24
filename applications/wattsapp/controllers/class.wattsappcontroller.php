@@ -18,7 +18,7 @@
  */
 class WattsAppController extends Gdn_Controller {
   /** @var array List of objects to prep. They will be available as $this->$Name. */
-  public $Uses = array('Form', 'ServerModel', 'UserServerModel', 'UserModel');
+  public $Uses = array('Form', 'CollectorModel', 'UserCollectorModel', 'UserModel');
    
   /**
    * If you use a constructor, always call parent.
@@ -101,9 +101,9 @@ class WattsAppController extends Gdn_Controller {
   }
 
   static public function _getCollectors($Method, $OkToRender, $Args = '') {
-    $ServerModel = new ServerModel();
+    $CollectorModel = new CollectorModel();
     $UserModel = new UserModel();
-    $Collectors = $ServerModel->ServerQueryUserID($UserModel->GetByEmail($OkToRender)->UserID);
+    $Collectors = $CollectorModel->CollectorQueryUserID($UserModel->GetByEmail($OkToRender)->UserID);
     if ($Collectors && $Collectors->NumRows() > 0) {
       //for all collectors
       $res = array();
@@ -113,7 +113,7 @@ class WattsAppController extends Gdn_Controller {
         $CollectorPort = $Collector->Port;
         $res_nojson = json_decode(self::_getCollector($CollectorAddress, $CollectorPort, $Method, $Args));
         
-        $obj->collectorid = $Collector->ServerID;
+        $obj->collectorid = $Collector->CollectorID;
         $obj->collectorname = $CollectorName;
         $obj->access = $Collector->PermissionType == "view" ? "1" :
                        $Collector->PermissionType == "admin" ? "2" : "0";
@@ -130,7 +130,7 @@ class WattsAppController extends Gdn_Controller {
       $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
         //FETCH the data from the database
-        $this->res = $this->ServerModel->ServerQueryUserID($this->UserModel->GetByEmail($this->OkToRender)->UserID);
+        $this->res = $this->CollectorModel->CollectorQueryUserID($this->UserModel->GetByEmail($this->OkToRender)->UserID);
 
       }
     }
@@ -144,12 +144,12 @@ class WattsAppController extends Gdn_Controller {
       $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
         $UserID = $this->UserModel->GetByEmail($this->OkToRender)->UserID;
-        $CollectorPermission = $this->UserServerModel->GetPermission($UserID, $CollectorID);
+        $CollectorPermission = $this->UserCollectorModel->GetPermission($UserID, $CollectorID);
 
         if ($CollectorPermission){
           //if the user has permission to see this collector
           //FETCH THE DATA from the collector
-          $CollectorData = $this->ServerModel->GetID($CollectorPermission->ServerID);
+          $CollectorData = $this->CollectorModel->GetID($CollectorPermission->CollectorID);
           $CollectorAddress = $CollectorData->Address;
           $CollectorPort = $CollectorData->Port;
 
@@ -228,15 +228,15 @@ class WattsAppController extends Gdn_Controller {
             $pRes = "";
 
             //if the user has permission for the collector
-            $CollectorPermission = $this->UserServerModel->GetPermission($UserID, $CollectorID);
+            $CollectorPermission = $this->UserCollectorModel->GetPermission($UserID, $CollectorID);
             if ($CollectorPermission){
-              $CollectorData = $this->ServerModel->GetID($CollectorPermission->ServerID);
+              $CollectorData = $this->CollectorModel->GetID($CollectorPermission->CollectorID);
               $CollectorAddress = $CollectorData->Address;
               $CollectorPort = $CollectorData->Port;
               $args = $MoteList == "*" ? '' : 'sensors=' . implode(',', $MoteList);
               $args = $args . "&time=" . $Times;
               $pRes = self::_getCollector($CollectorAddress, $CollectorPort, $Method, $args);
-              $obj->collectorid = $CollectorData->ServerID;
+              $obj->collectorid = $CollectorData->CollectorID;
               $obj->collectorname = $CollectorData->Name;
               $obj->data = json_decode($pRes);
               $res[] = $obj;

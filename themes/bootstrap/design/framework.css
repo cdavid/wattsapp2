@@ -1,0 +1,28 @@
+body {
+  padding-top: 60px;
+}
+
+/* table background and hover colors */
+/* --------------------------------- */
+.zebra-striped tbody {
+  background-color: #f5f5f5;
+}                    
+
+.zebra-striped tbody tr:hover td {
+  background-color:  #fee9cc;
+}
+/* --------------------------------- */
+
+/* table override for news feed */
+.feed{
+  border: 1px;
+}
+
+.littlehero{
+  padding-top: 20px;
+  padding-bottom: 40px;
+}
+
+.grey{
+  background-color:#f5f5f5;
+}
