@@ -294,8 +294,8 @@ class WattsAppController extends Gdn_Controller {
     $this->Render();
   }
 
-  public function _RenameRelocate ($Method, $ArgName, $ClientID, $Token, $CollectorID, $MoteID, $NewValue) {
-    if ($ClientID && $Token && $CollectorID && $MoteID && $NewName &&
+  public function _RenameRelocate ($Method, $ArgName, $ClientID, $Token, $CollectorID = null, $MoteID = null, $NewValue = null) {
+    if ($ClientID && $Token && $CollectorID != null && $MoteID != null && $NewValue != null &&
         is_numeric($ClientID) && is_numeric($CollectorID) && is_numeric($MoteID)) {
       $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
@@ -306,7 +306,7 @@ class WattsAppController extends Gdn_Controller {
           $CollectorData = $this->CollectorModel->GetID($CollectorPermission->CollectorID);
           $CollectorAddress = $CollectorData->Address;
           $CollectorPort = $CollectorData->Port;
-          $args = 'sensor=' . $MoteID . "&$ArgName=" . $NewName;
+          $args = 'sensor=' . $MoteID . "&$ArgName=" . $NewValue;
           $this->res = self::_getCollector($CollectorAddress, $CollectorPort, $Method, $args);
         }
       } else {
@@ -322,10 +322,10 @@ class WattsAppController extends Gdn_Controller {
   }
 
   public function Rename ($ClientID, $Token, $CollectorID, $MoteID, $NewName) {
-    $this->_RenameRelocate('rename', 'name', $ClientID, $Token, $CollectorID, $MoteID, $NewValue);    
+    $this->_RenameRelocate('rename', 'name', $ClientID, $Token, $CollectorID, $MoteID, $NewName);    
   }
 
   public function Relocate ($ClientID, $Token, $CollectorID, $MoteID, $NewLocation) {
-    $this->_RenameRelocate('relocate',  'location', $ClientID, $Token, $CollectorID, $MoteID, $NewValue);
+    $this->_RenameRelocate('relocate',  'location', $ClientID, $Token, $CollectorID, $MoteID, $NewLocation);
   }
 }
