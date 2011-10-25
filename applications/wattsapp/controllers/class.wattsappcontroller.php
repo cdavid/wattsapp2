@@ -18,7 +18,7 @@
  */
 class WattsAppController extends Gdn_Controller {
   /** @var array List of objects to prep. They will be available as $this->$Name. */
-  public $Uses = array('Form', 'CollectorModel', 'UserCollectorModel', 'UserModel');
+  public $Uses = array('Form', 'CollectorModel', 'UserCollectorModel', 'UserModel', 'CollectorRequestModel');
    
   /**
    * If you use a constructor, always call parent.
@@ -112,13 +112,13 @@ class WattsAppController extends Gdn_Controller {
         $CollectorAddress = $Collector->Address;
         $CollectorPort = $Collector->Port;
         $res_nojson = json_decode(self::_getCollector($CollectorAddress, $CollectorPort, $Method, $Args));
-        
+
         $obj->collectorid = $Collector->CollectorID;
         $obj->collectorname = $CollectorName;
         $obj->access = $Collector->PermissionType == "view" ? "1" :
-                       $Collector->PermissionType == "admin" ? "2" : "0";
+        $Collector->PermissionType == "admin" ? "2" : "0";
         $obj->motelist = $res_nojson;
-        
+
         $res[] = $obj;
       }
     }
@@ -219,7 +219,7 @@ class WattsAppController extends Gdn_Controller {
             $sItem = substr($sItem, 1, -1); // remove ()
             $a = explode(',', $sItem);
             $CollectorID = ''; if ($a[0]) $CollectorID = $a[0];
-            $MoteStr = ''; if ($a[1]) $MoteStr = $a[1];
+            $MoteStr = null; if ($a[1] != null) $MoteStr = $a[1];
             if ($MoteStr == '*') {
               $MoteList = "*";
             } else {
@@ -262,5 +262,70 @@ class WattsAppController extends Gdn_Controller {
     $this->DeliveryMethod(DELIVERY_METHOD_JSON);
     $this->View = 'sumdetail';
     $this->Render();
+  }
+
+  public function requireAccess($ClientID, $Token, $Address, $Port, $Justification) {
+    if ($ClientID && $Token && is_numeric($ClientID)) {
+      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
+      if ($this->OkToRender) {
+        $UserID = $this->UserModel->GetByEmail($this->OkToRender)->UserID;
+        $Collector = $this->CollectorModel->GetByAddressPort($Address, $Port);
+        if ($Collector && $Collector->CollectorID) {
+          $CollectorID = $Collector->CollectorID;
+          $num = $this->CollectorRequestModel->GetCollectorUserNum($UserID, $CollectorID);
+          if ($num > 0) {
+            $this->res = '{"error":"Request alread recorded. Please be patient."}';
+          } else {
+            //let the real magic begin...
+            //add a new request to the table
+            //TODO: also edit AddRequest so that it adds stuff to activity and it sends the email
+            $r = $this->CollectorRequestModel->AddRequest($UserID, $CollectorID, $Justification, 'new');
+            
+            //TODO: Finish this
+          }
+        } else {
+          $this->res = "{'error':'Inexistent collector'}";
+        }
+      }
+    }
+    $this->DeliveryType(DELIVERY_TYPE_VIEW);
+    $this->DeliveryMethod(DELIVERY_METHOD_JSON);
+    $this->View = 'mlist';
+    $this->Render();
+  }
+
+  public function _RenameRelocate ($Method, $ArgName, $ClientID, $Token, $CollectorID, $MoteID, $NewValue) {
+    if ($ClientID && $Token && $CollectorID && $MoteID && $NewName &&
+        is_numeric($ClientID) && is_numeric($CollectorID) && is_numeric($MoteID)) {
+      $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
+      if ($this->OkToRender) {
+        $UserID = $this->UserModel->GetByEmail($this->OkToRender)->UserID;
+        $CollectorPermission = $this->UserCollectorModel->GetPermission($UserID, $CollectorID);
+        //if the user has any permissions for this collector
+        if ($CollectorPermission){
+          $CollectorData = $this->CollectorModel->GetID($CollectorPermission->CollectorID);
+          $CollectorAddress = $CollectorData->Address;
+          $CollectorPort = $CollectorData->Port;
+          $args = 'sensor=' . $MoteID . "&$ArgName=" . $NewName;
+          $this->res = self::_getCollector($CollectorAddress, $CollectorPort, $Method, $args);
+        }
+      } else {
+        $this->res = "{'error':'Invalid login credentials'}";
+      }
+    } else {
+      $this->res = "{'error':'Invalid arguments'}";
+    }
+    $this->DeliveryType(DELIVERY_TYPE_VIEW);
+    $this->DeliveryMethod(DELIVERY_METHOD_JSON);
+    $this->View = 'mlist';
+    $this->Render();
+  }
+
+  public function Rename ($ClientID, $Token, $CollectorID, $MoteID, $NewName) {
+    $this->_RenameRelocate('rename', 'name', $ClientID, $Token, $CollectorID, $MoteID, $NewValue);    
+  }
+
+  public function Relocate ($ClientID, $Token, $CollectorID, $MoteID, $NewLocation) {
+    $this->_RenameRelocate('relocate',  'location', $ClientID, $Token, $CollectorID, $MoteID, $NewValue);
   }
 }

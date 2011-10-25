@@ -57,6 +57,15 @@ $Construct->Table('UserCollector')
    ->Column('PermissionType', 'varchar(50)') //should be view / admin
    ->Set($Explicit,$Drop);
    
+$Construct->Table('CollectorRequest')
+    ->PrimaryKey('CollectorRequest')
+    ->Column('UserID', 'int')
+    ->Column('CollectorID', 'int')
+    ->Column('Date', 'datetime', TRUE)
+    ->Column('Justification', 'text')
+    ->Column('Status', 'text')
+    ->Set($Explicit, $Drop);
+    
 //$Construct->Table('UserMote')
 //   ->PrimaryKey('UserMoteID')
 //   ->Column('UserID')

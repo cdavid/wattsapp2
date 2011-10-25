@@ -49,7 +49,14 @@ class CollectorModel extends Gdn_Model {
         ->Get();
   }
   
-  
+  public function GetByAddressPort ($Address, $Port) {
+    $this->CollectorQuery();
+    $this->SQL
+      ->Where('a.Address', $Address)
+      ->Where('a.Port', $Port)
+      ->Get()
+      ->FirstRow();
+  }
   
   public function Save($FormPostValues) {
     $Session = Gdn::Session();
