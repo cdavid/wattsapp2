@@ -89,7 +89,8 @@ class WattsAppController extends Gdn_Controller {
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "$CollectorAddress:$CollectorPort/$CollectorMethod?$Args");
-    curl_setopt($ch, CURLOPT_CAINFO, "/home/cdavid/lisa.pem"); // C('WattsApp.CAINFO');
+    // NOT C('WattsApp.CAINFO'); == but store the key for each collector
+    curl_setopt($ch, CURLOPT_CAINFO, "/home/cdavid/lisa.pem");
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, '1');
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, '1');
     curl_setopt($ch, CURLOPT_SSLCERT, "/home/cdavid/certificate.pem"); // C('WattsApp.SSLCERT');
@@ -149,17 +150,21 @@ class WattsAppController extends Gdn_Controller {
         if ($CollectorPermission){
           //if the user has permission to see this collector
           //FETCH THE DATA from the collector
-          $CollectorData = $this->CollectorModel->GetID($CollectorPermission->CollectorID);
-          $CollectorAddress = $CollectorData->Address;
-          $CollectorPort = $CollectorData->Port;
+          $CollectorData = $this->CollectorModel->GetID($CollectorID);
+          if (is_object($CollectorData)) {
+            $CollectorAddress = $CollectorData->Address;
+            $CollectorPort = $CollectorData->Port;
 
-          $res_json = self::_getCollector($CollectorAddress, $CollectorPort, 'list', '');
-          $res_no = json_decode($res_json);
-          foreach ($res_no as $r) {
-            $r->access = $CollectorPermission->PermissionType == "view" ? "1" :
-            $CollectorPermission->PermissionType == "admin" ? "2" : "0";
+            $res_json = self::_getCollector($CollectorAddress, $CollectorPort, 'list', '');
+            $res_no = json_decode($res_json);
+            foreach ($res_no as $r) {
+              $r->access = $CollectorPermission->PermissionType == "view" ? "1" :
+              $CollectorPermission->PermissionType == "admin" ? "2" : "0";
+            }
+            $this->res = json_encode($res_no);
+          } else {
+            $this->res = "{'error':'resource unavailable'}";
           }
-          $this->res = json_encode($res_no);
         }
       }
     }
@@ -205,7 +210,7 @@ class WattsAppController extends Gdn_Controller {
         $res = array();
         $UserID = $this->UserModel->GetByEmail($this->OkToRender)->UserID;
 
-        //TODO: check for well-formedness
+        //TODO: check for well-formedness of the input
         //TODO: Optimize the CollectionPermission retrieval to be done just once, not for every collector
         if ($SensorList == '*') {
           $this->res = json_encode(self::_getCollectors($Method, $this->OkToRender, "time=" . $Times == '*' ? '' : $Times));
@@ -280,7 +285,7 @@ class WattsAppController extends Gdn_Controller {
             //add a new request to the table
             //TODO: also edit AddRequest so that it adds stuff to activity and it sends the email
             $r = $this->CollectorRequestModel->AddRequest($UserID, $CollectorID, $Justification, 'new');
-            
+
             //TODO: Finish this
           }
         } else {
@@ -296,7 +301,7 @@ class WattsAppController extends Gdn_Controller {
 
   public function _RenameRelocate ($Method, $ArgName, $ClientID, $Token, $CollectorID = null, $MoteID = null, $NewValue = null) {
     if ($ClientID && $Token && $CollectorID != null && $MoteID != null && $NewValue != null &&
-        is_numeric($ClientID) && is_numeric($CollectorID) && is_numeric($MoteID)) {
+    is_numeric($ClientID) && is_numeric($CollectorID) && is_numeric($MoteID)) {
       $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
       if ($this->OkToRender) {
         $UserID = $this->UserModel->GetByEmail($this->OkToRender)->UserID;
@@ -322,7 +327,7 @@ class WattsAppController extends Gdn_Controller {
   }
 
   public function Rename ($ClientID, $Token, $CollectorID, $MoteID, $NewName) {
-    $this->_RenameRelocate('rename', 'name', $ClientID, $Token, $CollectorID, $MoteID, $NewName);    
+    $this->_RenameRelocate('rename', 'name', $ClientID, $Token, $CollectorID, $MoteID, $NewName);
   }
 
   public function Relocate ($ClientID, $Token, $CollectorID, $MoteID, $NewLocation) {

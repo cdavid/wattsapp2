@@ -10,8 +10,10 @@ class UserCollectorModel extends Gdn_Model {
       ->Select('a.UserCollectorID')
       ->Select('a.CollectorID')
       ->Select('a.UserID')
+      ->Select('u.Name')
       ->Select('a.PermissionType')
-      ->From('UserCollector a');
+      ->From('UserCollector a')
+      ->Join('User u', 'u.UserID = a.UserID');
   }
   
   public function GetID ($UserCollectorID) {
@@ -37,6 +39,12 @@ class UserCollectorModel extends Gdn_Model {
   public function GetByCollectorID ($CollectorID) {
     $this->UserCollectorQuery();
     return $this->SQL->Where('a.CollectorID', $CollectorID)->Get();
+  }
+  
+  public function GetOrderedCollectorID ($CollectorID) {
+    $this->UserCollectorQuery();
+    return $this->SQL->Where('a.CollectorID', $CollectorID)
+                ->OrderBy('a.PermissionType', 'asc')->Get();
   }
   
   public function GetPermission ($UserID, $CollectorID) {
