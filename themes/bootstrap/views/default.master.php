@@ -5,6 +5,7 @@
 $this->RenderAsset('Head');
 echo '<script type="text/javascript" src="' . Gdn_Url::WebRoot(true) . "/themes/bootstrap/js/bootstrap-tabs.js" . '" /></script>' . "\n";
 echo '<script type="text/javascript" src="' . Gdn_Url::WebRoot(true) . "/themes/bootstrap/js/bootstrap-dropdown.js" . '" /></script>' . "\n";
+echo '<link src="' . Gdn_Url::WebRoot(TRUE) . '/themes/bootstrap/design/style.css" rel="stylesheet" type="text/css"></link>' . "\n";
 ?>
 </head>
 <body id="<?php echo $BodyIdentifier; ?>"
