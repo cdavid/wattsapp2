@@ -2652,3 +2652,10 @@ div.SignInPopup .ExistingUsername {
 	color: #000;
 	display: block;
 }
+
+/* added by vbajpai */
+/* align FB profile pic with topbar */
+.topbarimg {
+   margin-top:8px;
+   margin-bottom:10px;
+}      

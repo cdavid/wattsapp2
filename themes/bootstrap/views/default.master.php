@@ -20,6 +20,7 @@ echo '<link src="' . Gdn_Url::WebRoot(TRUE) . '/themes/bootstrap/design/style.cs
 					if ($this->Menu) {
 						$this->Menu->AddLink('Dashboard', T('Dashboard'), '/dashboard/settings', array('Garden.Settings.Manage'));
 						$this->Menu->AddLink('Collector', T('Collectors'), '/collector');
+						$this->Menu->AddLink('Meters', T('Meters'), '/meter');
 						$this->Menu->AddLink('Activity', T('Activity'), '/activity');			      
 						if ($Session->IsValid()) {
 							$Name = $Session->User->Name;
@@ -32,8 +33,8 @@ echo '<link src="' . Gdn_Url::WebRoot(TRUE) . '/themes/bootstrap/design/style.cs
               } else {
                 $ProfileSlug = $Session->UserID.'/'.urlencode($Session->User->Name);
               }
-							$this->Menu->AddLink('User', $Name, '/profile/'.$ProfileSlug, array('Garden.SignIn.Allow'), array('class' => 'UserNotifications'));
-							$this->Menu->AddLink('SignOut', T('Sign Out'), Gdn::Authenticator()->SignOutUrl(), FALSE, array('class' => 'NonTab SignOut'));
+				//			$this->Menu->AddLink('User', $Name, '/profile/'.$ProfileSlug, array('Garden.SignIn.Allow'), array('class' => 'UserNotifications'));
+				//			$this->Menu->AddLink('SignOut', T('Sign Out'), Gdn::Authenticator()->SignOutUrl(), FALSE, array('class' => 'NonTab SignOut'));
 						} else {
 							$Attribs = array();
 							if (SignInPopup() && strpos(Gdn::Request()->Url(), 'entry') === FALSE) {
@@ -44,6 +45,24 @@ echo '<link src="' . Gdn_Url::WebRoot(TRUE) . '/themes/bootstrap/design/style.cs
 						echo $this->Menu->ToString();
 					}
 				?>
+					<form class="pull-left" action="">
+					  <input type="text" placeholder="Search">
+					</form>
+
+					<ul class="nav secondary-nav">
+						<li class="topbarimg">
+						<fb:profile-pic uid="loggedinuser" width="28" linked="false" style="width: 28px; " class=" fb_profile_pic_rendered"><img src="https://fbcdn-profile-a.akamaihd.net/hprofile-ak-snc4/275739_581430275_2144356331_t.jpg" alt="Vaibhav Bajpai" title="Vaibhav Bajpai" style="width:28px;" class=" fb_profile_pic_rendered"></fb:profile-pic>
+						</li>
+	  				<li class="dropdown" data-dropdown="dropdown">
+	  					<a href="#" class="dropdown-toggle">
+					  	  <fb:name uid="loggedinuser" use-you="no" linked="false">Vaibhav Bajpai</fb:name>
+						</a>
+						<ul class="dropdown-menu">
+						  <li><a href="#settings">Settings</a></li>
+		  				  <li><a href="#logout" onclick="FB.logout()">Logout</a></li>
+						</ul>
+	  				</li>
+					</ul>
         <?php
 // 					$Form = Gdn::Factory('Form');
 // 					$Form->InputPrefix = '';
