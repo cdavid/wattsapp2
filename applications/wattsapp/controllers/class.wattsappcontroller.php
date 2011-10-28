@@ -295,6 +295,9 @@ class WattsAppController extends Gdn_Controller {
   }
 
   public function _RenameRelocate ($Method, $ArgName, $ClientID, $Token, $CollectorID = null, $MoteID = null, $NewValue = null) {
+logger($NewValue);
+$NewValue = urldecode(urldecode($NewValue));
+logger($NewValue);
     if ($ClientID && $Token && $CollectorID != null && $MoteID != null && $NewValue != null &&
         is_numeric($ClientID) && is_numeric($CollectorID) && is_numeric($MoteID)) {
       $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);

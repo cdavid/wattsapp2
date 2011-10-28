@@ -79,7 +79,7 @@ echo '<link src="' . Gdn_Url::WebRoot(TRUE) . '/themes/bootstrap/design/style.cs
 			<div id="Panel">
 			<?php $this->RenderAsset('Panel'); ?></div>
 		</div>
-		<footer>	
+		<div id="Foot">	
 		        <p>
 	        &copy; WattsApp,
 	        <a target="_blank" href="http://cnds.eecs.jacobs-university.de/">
@@ -93,7 +93,7 @@ echo '<link src="' . Gdn_Url::WebRoot(TRUE) . '/themes/bootstrap/design/style.cs
 		    $this->RenderAsset('Foot');
 		    echo Wrap(Anchor(T('Powered by Vanilla'), C('Garden.VanillaUrl')), 'div');
 		    ?>
-		</footer>
+		</div>
 	</div>
 	<?php $this->FireEvent('AfterBody'); ?>
 </body>
