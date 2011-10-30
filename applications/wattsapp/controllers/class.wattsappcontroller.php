@@ -354,8 +354,8 @@ class WattsAppController extends Gdn_Controller {
     $Email = $d->email;
 
     $UserModel = new UserModel();
-    $res = $UserModel->GetByEmail($Email)->NumRows();
-    if (!$res) {
+    $res = $UserModel->GetByEmail($Email);
+    if (!is_object($res)) {
       //we have a new user
       $User['Name'] = $d->username;
       $User['Password'] = RandomString(50);
@@ -367,10 +367,15 @@ class WattsAppController extends Gdn_Controller {
       $UserID = $UserModel->InsertForBasic($User, FALSE);
       $User['UserID'] = $UserID;
       $UserModel->SaveRoles($UserID, C('Garden.Registration.DefaultRoles'));
+      $UserModel->DefinePermissions($UserID);
       
       //give the user default permissions
       $UserCollectorModel = new UserCollectorModel();
-      $UserCollectorModel->SQL->Insert('UserCollector', array('UserID' => $UserID, 'CollectorID' => '1', 'PermissionType' => 'view'));      
+      $UserCollectorModel->SQL->Insert('UserCollector', array('UserID' => $UserID, 'CollectorID' => '1', 'PermissionType' => 'view'));
+      echo "Success";      
+    } else {
+      echo "User already registered";
     }
+    
   }
 }
