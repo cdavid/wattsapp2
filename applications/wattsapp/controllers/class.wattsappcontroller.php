@@ -75,7 +75,6 @@ class WattsAppController extends Gdn_Controller {
     $output = curl_exec($ch);
     curl_close($ch);
 
-    //    $output = file_get_contents("https://graph.facebook.com/me?access_token=".$Token);
     //Now parse the $output and get the id from the
     $d = json_decode($output);
     if ($d->id == $ClientID) {
@@ -238,7 +237,7 @@ class WattsAppController extends Gdn_Controller {
               $CollectorData = $this->CollectorModel->GetID($CollectorPermission->CollectorID);
               $CollectorAddress = $CollectorData->Address;
               $CollectorPort = $CollectorData->Port;
-              $args = $MoteList == "*" ? '' : 'sensors=' . implode(',', $MoteList);
+              $args = $MoteList == "*" ? '' : 'meters=' . implode(',', $MoteList);
               $args = $args . "&time=" . $Times;
               $pRes = self::_getCollector($CollectorAddress, $CollectorPort, $Method, $args);
               $obj->collectorid = $CollectorData->CollectorID;
@@ -300,9 +299,7 @@ class WattsAppController extends Gdn_Controller {
   }
 
   public function _RenameRelocate ($Method, $ArgName, $ClientID, $Token, $CollectorID = null, $MoteID = null, $NewValue = null) {
-logger($NewValue);
-$NewValue = urldecode(urldecode($NewValue));
-logger($NewValue);
+    $NewValue = urldecode(urldecode($NewValue));
     if ($ClientID && $Token && $CollectorID != null && $MoteID != null && $NewValue != null &&
     is_numeric($ClientID) && is_numeric($CollectorID) && is_numeric($MoteID)) {
       $this->OkToRender = self::_verifyFacebookLogin($ClientID, $Token);
@@ -314,7 +311,7 @@ logger($NewValue);
           $CollectorData = $this->CollectorModel->GetID($CollectorPermission->CollectorID);
           $CollectorAddress = $CollectorData->Address;
           $CollectorPort = $CollectorData->Port;
-          $args = 'sensor=' . $MoteID . "&$ArgName=" . $NewValue;
+          $args = 'meter=' . $MoteID . "&$ArgName=" . $NewValue;
           $this->res = self::_getCollector($CollectorAddress, $CollectorPort, $Method, $args);
         }
       } else {
@@ -335,5 +332,45 @@ logger($NewValue);
 
   public function Relocate ($ClientID, $Token, $CollectorID, $MoteID, $NewLocation) {
     $this->_RenameRelocate('relocate',  'location', $ClientID, $Token, $CollectorID, $MoteID, $NewLocation);
+  }
+  
+  public function Blacklist ($ClientID, $Token, $CollectorID, $MoteID) {
+    $this->_RenameRelocate('blacklist', '', $ClientID, $Token, $CollectorID, $MoteID, '');
+  }
+  public function unBlacklist ($ClientID, $Token, $CollectorID, $MoteID) {
+    $this->_RenameRelocate('unblacklist', '', $ClientID, $Token, $CollectorID, $MoteID, '');
+  }
+  
+  public function LoginUser ($Token) {
+    logger(var_export($_GET));
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://graph.facebook.com/me?access_token=".$Token);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    $output = curl_exec($ch);
+    curl_close($ch);
+
+    //Now parse the $output and get the id from FB
+    $d = json_decode($output);
+    $Email = $d->email;
+
+    $UserModel = new UserModel();
+    $res = $UserModel->GetByEmail($Email)->NumRows();
+    if (!$res) {
+      //we have a new user
+      $User['Name'] = $d->username;
+      $User['Password'] = RandomString(50);
+      $User['HashMethod'] = 'Random';
+      $User['Photo'] = 'http://graph.facebook.com/' . $d->id . '/picture';
+      $User['About'] = '';
+      $User['Email'] = $d->email;
+      
+      $UserID = $UserModel->InsertForBasic($User, FALSE);
+      $User['UserID'] = $UserID;
+      $UserModel->SaveRoles($UserID, C('Garden.Registration.DefaultRoles'));
+      
+      //give the user default permissions
+      $UserCollectorModel = new UserCollectorModel();
+      $UserCollectorModel->SQL->Insert('UserCollector', array('UserID' => $UserID, 'CollectorID' => '1', 'PermissionType' => 'view'));      
+    }
   }
 }
